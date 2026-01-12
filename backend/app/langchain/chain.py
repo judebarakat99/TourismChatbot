@@ -6,10 +6,10 @@ import os
 load_dotenv()
 
 llm = AzureChatOpenAI(
-    azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+    azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),
     temperature=0.3,
     streaming=True,
-    openai_api_version=os.getenv("OPENAI_API_VERSION")
+    openai_api_version=os.getenv("OPENAI_API_CHAT_VERSION")
 )
 
 chain = prompt | llm
