@@ -1,35 +1,59 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>UK Tourism Chatbot</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UK Tourism Chatbot</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<header class="topbar">
-  <div>
-    <div class="title">UK Tourism Chatbot</div>
-    <div class="subtitle">GitHub Pages frontend</div>
-  </div>
-  <select id="language">
-    <option value="auto">Auto</option>
-    <option value="en" selected>English</option>
-    <option value="ar">العربية</option>
-  </select>
-</header>
+  <header class="topbar">
+    <div class="brand">
+      <div class="title">UK Tourism Chatbot</div>
+      <div class="subtitle">Ask about UK travel, routes, seasons, events, etiquette</div>
+    </div>
 
-<div class="container">
-  <div id="chat" class="chat"></div>
-  <div class="sources">
-    <div class="sources-title">Sources</div>
-    <ul id="sourcesList"></ul>
-  </div>
-  <div class="composer">
-    <input id="input" placeholder="Ask about UK travel..." />
-    <button id="sendBtn">Send</button>
-  </div>
-</div>
+    <div class="controls">
+      <label class="label" for="language">Language</label>
+      <select id="language" class="select">
+        <option value="auto" selected>Auto</option>
+        <option value="en">English</option>
+        <option value="ar">العربية</option>
+      </select>
+    </div>
+  </header>
 
-<script src="app.js"></script>
+  <main class="layout">
+    <section class="chatPanel">
+      <div id="chat" class="chat"></div>
+
+      <div class="composer">
+        <textarea id="input" class="input" rows="2" placeholder="Type your question... (Enter to send, Shift+Enter for new line)"></textarea>
+        <button id="sendBtn" class="btn">Send</button>
+      </div>
+
+      <div class="hint">
+        Tip: try “Plan a 3-day London itinerary” or “How to get from London to Edinburgh?”
+      </div>
+    </section>
+
+    <aside class="sidePanel">
+      <div class="card">
+        <div class="cardTitle">Sources</div>
+        <ul id="sourcesList" class="sourcesList"></ul>
+      </div>
+
+      <div class="card">
+        <div class="cardTitle">Status</div>
+        <div id="status" class="status">Not connected</div>
+        <div class="small">
+          If you see CORS errors, your backend must allow
+          <code>https://judebarakat99.github.io</code>.
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
