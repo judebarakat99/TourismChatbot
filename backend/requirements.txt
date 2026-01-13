@@ -1,26 +1,17 @@
-# Web framework
 fastapi==0.111.0
 uvicorn[standard]==0.30.1
-
-# Config & env
 python-dotenv==1.0.1
 pydantic==2.7.4
 pydantic-settings==2.3.4
-
-# Streaming (SSE)
 sse-starlette==2.1.2
 
-# LangChain core
 langchain==0.2.12
 langchain-community==0.2.11
 langchain-openai==0.1.17
 langchain-text-splitters==0.2.2
+langchain-core==0.2.43
+langsmith==0.1.147
 
-# Vector DB
 qdrant-client==1.10.1
-
-# Tokenization
 tiktoken==0.7.0
-
-# Document reading
 pypdf==4.2.0
