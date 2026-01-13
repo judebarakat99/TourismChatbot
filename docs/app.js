@@ -1,135 +1,77 @@
-// ✅ CHANGE THIS to your deployed backend URL (Render/Railway/Azure/etc)
-const BACKEND_URL = "https://YOUR-BACKEND-DOMAIN";
+const BACKEND_URL="https://YOUR-BACKEND-URL";
+const sessionId = crypto.randomUUID();
 
-// simple client session id
-const sessionId = (crypto.randomUUID && crypto.randomUUID()) || ("sess_" + Math.random().toString(16).slice(2) + "_" + Date.now());
+const chat=document.getElementById("chat");
+const input=document.getElementById("input");
+const sendBtn=document.getElementById("sendBtn");
+const lang=document.getElementById("language");
+const sourcesList=document.getElementById("sourcesList");
 
-const chatEl = document.getElementById("chat");
-const inputEl = document.getElementById("input");
-const sendBtn = document.getElementById("sendBtn");
-const langEl = document.getElementById("language");
-const sourcesListEl = document.getElementById("sourcesList");
-
-function addMessage(role, text) {
-  const row = document.createElement("div");
-  row.className = `msg ${role}`;
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = text;
-  row.appendChild(bubble);
-  chatEl.appendChild(row);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  return bubble;
+function add(role,text){
+  const d=document.createElement("div");
+  d.className="msg "+role;
+  const b=document.createElement("div");
+  b.className="bubble";
+  b.textContent=text;
+  d.appendChild(b);
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+  return b;
 }
 
-function setSources(sources) {
-  sourcesListEl.innerHTML = "";
-  (sources || []).forEach((s, idx) => {
-    const li = document.createElement("li");
-    const label = `[${idx + 1}] ${s.title} — ${s.source}`;
-    if (s.url) {
-      const a = document.createElement("a");
-      a.href = s.url;
-      a.target = "_blank";
-      a.rel = "noreferrer";
-      a.textContent = label + " (link)";
-      li.appendChild(a);
-    } else {
-      li.textContent = label;
-    }
-    sourcesListEl.appendChild(li);
+function setSources(s){
+  sourcesList.innerHTML="";
+  (s||[]).forEach((x,i)=>{
+    const li=document.createElement("li");
+    li.textContent=`[${i+1}] ${x.title} — ${x.source}`;
+    sourcesList.appendChild(li);
   });
 }
 
-// Parse SSE text/event-stream (messages separated by blank line)
-function parseSSEChunk(buffer) {
-  const events = [];
-  let idx;
-  while ((idx = buffer.indexOf("\n\n")) !== -1) {
-    const raw = buffer.slice(0, idx);
-    buffer = buffer.slice(idx + 2);
-
-    let event = "message";
-    let dataLines = [];
-    for (const line of raw.split("\n")) {
-      if (line.startsWith("event:")) event = line.slice(6).trim();
-      if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
-    }
-    const data = dataLines.join("\n").replace(/\\n/g, "\n");
-    events.push({ event, data });
-  }
-  return { events, buffer };
-}
-
-async function send() {
-  const text = inputEl.value.trim();
-  if (!text) return;
-
-  inputEl.value = "";
-  setSources([]);
-
-  addMessage("user", text);
-  const assistantBubble = addMessage("assistant", "");
-
-  sendBtn.disabled = true;
-  sendBtn.textContent = "Streaming…";
-
-  try {
-    const res = await fetch(`${BACKEND_URL}/chat/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        session_id: sessionId,
-        language: langEl.value
-      })
+function parse(buf){
+  let out=[],i;
+  while((i=buf.indexOf("\n\n"))!=-1){
+    const raw=buf.slice(0,i);buf=buf.slice(i+2);
+    let ev="message",data=[];
+    raw.split("\n").forEach(l=>{
+      if(l.startsWith("event:"))ev=l.slice(6).trim();
+      if(l.startsWith("data:"))data.push(l.slice(5).trim());
     });
+    out.push({event:ev,data:data.join("\n").replace(/\\n/g,"\n")});
+  }
+  return {out,buf};
+}
 
-    if (!res.ok || !res.body) {
-      const err = await res.text();
-      throw new Error(err || `HTTP ${res.status}`);
-    }
+async function send(){
+  const text=input.value.trim();
+  if(!text)return;
+  input.value="";
+  setSources([]);
+  add("user",text);
+  const a=add("assistant","");
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let buffer = "";
+  const res=await fetch(BACKEND_URL+"/chat/stream",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({message:text,session_id:sessionId,language:lang.value})
+  });
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const parsed = parseSSEChunk(buffer);
-      buffer = parsed.buffer;
-
-      for (const ev of parsed.events) {
-        if (ev.event === "meta") {
-          try {
-            const obj = JSON.parse(ev.data);
-            if (obj && obj.sources) setSources(obj.sources);
-          } catch {}
-        }
-        if (ev.event === "token") {
-          assistantBubble.textContent += ev.data;
-          chatEl.scrollTop = chatEl.scrollHeight;
-        }
-        if (ev.event === "done") {
-          break;
-        }
-      }
-    }
-  } catch (e) {
-    assistantBubble.textContent = "Error: " + (e?.message || e);
-  } finally {
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Send";
+  const r=res.body.getReader();
+  const dec=new TextDecoder();
+  let buf="";
+  while(true){
+    const {value,done}=await r.read();
+    if(done)break;
+    buf+=dec.decode(value,{stream:true});
+    const p=parse(buf);buf=p.buf;
+    p.out.forEach(e=>{
+      if(e.event==="meta")setSources(JSON.parse(e.data).sources);
+      if(e.event==="token")a.textContent+=e.data;
+    });
   }
 }
 
-sendBtn.addEventListener("click", send);
-inputEl.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") send();
-});
+sendBtn.onclick=send;
+input.onkeydown=e=>{if(e.key==="Enter")send();}
 
-// welcome message
-addMessage("assistant", "Hi! Ask me about UK attractions, events, transport, food, and itinerary ideas.");
+add("assistant","Hi! Ask me about UK attractions, festivals, seasons, or transport.");
