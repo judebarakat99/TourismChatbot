@@ -1,51 +1,39 @@
-// ✅ Set this to your backend URL.
-// Local testing:
-// const BACKEND_URL = "http://localhost:8000";
-//
-// Production (after you deploy backend somewhere public):
-// const BACKEND_URL = "https://YOUR-BACKEND-DOMAIN";
+// Change this when backend is deployed publicly
 const BACKEND_URL = "http://localhost:8000";
+
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+const lang = document.getElementById("language");
+const statusEl = document.getElementById("status");
+const sourcesList = document.getElementById("sourcesList");
 
 const sessionId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
 
-const chatEl = document.getElementById("chat");
-const inputEl = document.getElementById("input");
-const sendBtn = document.getElementById("sendBtn");
-const langEl = document.getElementById("language");
-const sourcesListEl = document.getElementById("sourcesList");
-const statusEl = document.getElementById("status");
+function setStatus(t) { statusEl.textContent = t; }
 
-function setStatus(text) {
-  statusEl.textContent = text;
-}
-
-function addMessage(role, text) {
+function add(role, text) {
   const row = document.createElement("div");
-  row.className = `msgRow ${role}`;
-
-  const bubble = document.createElement("div");
-  bubble.className = "bubble";
-  bubble.textContent = text;
-
-  row.appendChild(bubble);
-  chatEl.appendChild(row);
-  chatEl.scrollTop = chatEl.scrollHeight;
-
-  return bubble;
+  row.className = "msg " + (role === "user" ? "user" : "bot");
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  row.appendChild(b);
+  chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+  return b;
 }
 
 function setSources(sources) {
-  sourcesListEl.innerHTML = "";
+  sourcesList.innerHTML = "";
   (sources || []).forEach((s, i) => {
     const li = document.createElement("li");
-    const title = s.title || "source";
-    const src = s.source || "";
-    li.textContent = `[${i + 1}] ${title}${src ? " — " + src : ""}`;
-    sourcesListEl.appendChild(li);
+    li.textContent = `[${i + 1}] ${s.title || "source"} — ${s.source || ""}`;
+    sourcesList.appendChild(li);
   });
 }
 
-// Basic SSE chunk parser for "event: X\ndata: Y\n\n"
+// Parse SSE response chunks: event: X \n data: Y \n\n
 function parseSSE(buffer) {
   const events = [];
   let idx;
@@ -67,26 +55,25 @@ function parseSSE(buffer) {
   return { events, buffer };
 }
 
-async function pingHealth() {
+async function ping() {
   try {
     const r = await fetch(`${BACKEND_URL}/health`);
-    if (!r.ok) throw new Error(`health status ${r.status}`);
-    setStatus("Connected ✅");
-  } catch (e) {
+    setStatus(r.ok ? "Connected ✅" : "Not connected ❌");
+  } catch {
     setStatus("Not connected ❌");
   }
 }
 
-async function sendMessage() {
-  const text = inputEl.value.trim();
+async function send() {
+  const text = input.value.trim();
   if (!text) return;
 
-  inputEl.value = "";
+  input.value = "";
   sendBtn.disabled = true;
   setSources([]);
-  addMessage("user", text);
 
-  const assistantBubble = addMessage("assistant", "");
+  add("user", text);
+  const botBubble = add("assistant", "");
   setStatus("Streaming…");
 
   try {
@@ -96,19 +83,19 @@ async function sendMessage() {
       body: JSON.stringify({
         message: text,
         session_id: sessionId,
-        language: langEl.value,
+        language: lang.value,
       }),
     });
 
     if (!res.ok || !res.body) {
-      const bodyText = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status} ${bodyText}`);
+      const t = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status} ${t}`);
     }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder("utf-8");
-
     let buffer = "";
+
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
@@ -120,40 +107,39 @@ async function sendMessage() {
       for (const ev of parsed.events) {
         if (ev.event === "meta") {
           try {
-            const meta = JSON.parse(ev.data);
-            setSources(meta.sources || []);
+            setSources(JSON.parse(ev.data).sources || []);
           } catch {}
-        } else if (ev.event === "token") {
-          assistantBubble.textContent += ev.data;
-          chatEl.scrollTop = chatEl.scrollHeight;
-        } else if (ev.event === "done") {
+        }
+        if (ev.event === "token") {
+          botBubble.textContent += ev.data;
+          chat.scrollTop = chat.scrollHeight;
+        }
+        if (ev.event === "done") {
           setStatus("Connected ✅");
         }
       }
     }
 
     setStatus("Connected ✅");
-  } catch (err) {
-    console.error(err);
-    assistantBubble.textContent =
-      "Error: Could not reach backend. Check BACKEND_URL and CORS settings.\n\n" +
-      String(err);
+  } catch (e) {
+    console.error(e);
+    botBubble.textContent =
+      "Error connecting to backend.\n\n" + String(e) +
+      "\n\nFix: Set BACKEND_URL correctly and allow GitHub Pages origin in CORS.";
     setStatus("Not connected ❌");
   } finally {
     sendBtn.disabled = false;
   }
 }
 
-// Enter to send, Shift+Enter for newline
-inputEl.addEventListener("keydown", (e) => {
+// Enter sends, Shift+Enter newline
+input.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    sendMessage();
+    send();
   }
 });
+sendBtn.addEventListener("click", send);
 
-sendBtn.addEventListener("click", sendMessage);
-
-// Initial message + health ping
-addMessage("assistant", "Hi! Ask me anything about UK travel (itineraries, transport, seasons, festivals, etiquette).");
-pingHealth();
+add("assistant", "Hi! Ask me about UK travel. Example: “Plan a 3-day London itinerary.”");
+ping();
