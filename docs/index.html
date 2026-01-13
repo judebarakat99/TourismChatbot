@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UK Tourism Chatbot</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="bar"></div>
+      <div>
+        <div class="title">UK Tourism Chatbot</div>
+        <div class="subtitle">Static GitHub Pages frontend + FastAPI backend</div>
+      </div>
+    </div>
+    <div class="controls">
+      <label>
+        Language:
+        <select id="language">
+          <option value="auto">Auto</option>
+          <option value="en" selected>English</option>
+          <option value="ar">العربية</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="chat" class="chat"></section>
+
+    <section class="sources">
+      <div class="sources-title">Retrieved sources</div>
+      <ul id="sourcesList"></ul>
+    </section>
+
+    <section class="composer">
+      <input id="input" placeholder="Ask about UK attractions, events, seasons, transport..." />
+      <button id="sendBtn">Send</button>
+    </section>
+
+    <p class="hint">
+      Tip: “Plan a 5-day London + Bath trip in March” or “What festivals are in Edinburgh in August?”
+    </p>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

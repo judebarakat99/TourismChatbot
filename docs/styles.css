@@ -1,0 +1,29 @@
+:root{
+    --dark:#0f1d2d;
+    --accent:#ffe600;
+    --border:rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f7f7f7;color:#111827}
+  .topbar{position:sticky;top:0;background:var(--dark);color:white;padding:14px 16px;display:flex;align-items:center;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .bar{height:8px;width:72px;background:var(--accent)}
+  .title{font-weight:700}
+  .subtitle{font-size:12px;opacity:.8}
+  .controls{margin-left:auto;font-size:14px}
+  .controls select{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:white}
+  .container{max-width:900px;margin:18px auto;padding:0 14px}
+  .chat{background:white;border:1px solid var(--border);border-radius:16px;padding:14px;min-height:55vh;box-shadow:0 1px 10px rgba(0,0,0,.03)}
+  .msg{display:flex;margin:10px 0}
+  .msg.user{justify-content:flex-end}
+  .bubble{max-width:82%;padding:10px 12px;border-radius:16px;white-space:pre-wrap;line-height:1.35;font-size:14px}
+  .user .bubble{background:#111827;color:white}
+  .assistant .bubble{background:#f9fafb;border:1px solid var(--border)}
+  .sources{margin-top:10px;background:white;border:1px solid var(--border);border-radius:16px;padding:12px}
+  .sources-title{font-size:12px;font-weight:700;color:#374151}
+  .sources ul{margin:8px 0 0;padding-left:18px;font-size:12px;color:#4b5563}
+  .composer{margin-top:10px;display:flex;gap:8px}
+  .composer input{flex:1;padding:12px;border-radius:14px;border:1px solid var(--border);outline:none}
+  .composer button{padding:12px 16px;border-radius:14px;border:0;background:var(--accent);font-weight:700;cursor:pointer}
+  .hint{font-size:12px;color:#6b7280;margin-top:10px}
+  
