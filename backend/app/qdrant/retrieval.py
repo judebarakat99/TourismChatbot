@@ -57,7 +57,14 @@ def _load_txt_documents(root: str) -> List[Document]:
 
 def _chunks_from_docs(docs: List[Document]) -> List[Document]:
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=150)
-    return splitter.split_documents(docs)
+    chunks = splitter.split_documents(docs)
+
+    # Ensure metadata is preserved
+    for chunk in chunks:
+        if "path" not in chunk.metadata:
+            chunk.metadata["path"] = "unknown"
+    return chunks
+
 
 def _collection_is_empty(vs: QdrantVectorStore) -> bool:
     # Fast, approximate check: if a similarity search returns nothing, assume empty
@@ -85,6 +92,7 @@ def _ingest_folder_if_needed(vs: QdrantVectorStore) -> None:
         )
         print(f"✅ Ingested {len(chunks)} chunks from '{DATA_DIR}' into '{QDRANT_COLLECTION}'.")
 
+
 # ---- Ensure collection & build vectorstore at import (safe) ----
 if not _collection_exists(QDRANT_COLLECTION):
     print(f"ℹ Creating collection '{QDRANT_COLLECTION}'...")
@@ -96,13 +104,37 @@ vectorstore = QdrantVectorStore(
     embedding=embeddings,
 )
 
-# Optional auto-ingest on first import/start
-_ingest_folder_if_needed(vectorstore)
+# ---- Reset and ingest all files on startup if AUTO_INGEST is True ----
+if AUTO_INGEST:
+    print("Resetting collection and ingesting all files...")
+    client.recreate_collection(
+        collection_name=QDRANT_COLLECTION,
+        vectors_config=VectorParams(size=EXPECTED_SIZE, distance=Distance.COSINE),
+    )
+
+    docs = _load_txt_documents(DATA_DIR)
+    print(f"Found {len(docs)} documents in {DATA_DIR}")
+
+    if docs:
+        chunks = _chunks_from_docs(docs)
+        print(f"Created {len(chunks)} chunks from documents")
+
+        QdrantVectorStore.from_documents(
+            documents=chunks,
+            embedding=embeddings,
+            url=QDRANT_URL,
+            collection_name=QDRANT_COLLECTION,
+        )
+
+        print(f"Ingested {len(chunks)} chunks from '{DATA_DIR}' into '{QDRANT_COLLECTION}'.")
+    else:
+        print("No documents found. Nothing ingested.")
 
 # ---- Public API ----
 def retrieve_context(query: str, top_k: int = 3) -> str:
-    """
-    Return concatenated top-k retrieved documents as context.
-    """
     docs = vectorstore.similarity_search(query, k=top_k)
-    return "\n".join(d.page_content for d in docs)
+    context_parts = []
+    for d in docs:
+        source = d.metadata.get("path", "unknown")
+        context_parts.append(f"[Source: {source}]\n{d.page_content}")
+    return "\n".join(context_parts)
