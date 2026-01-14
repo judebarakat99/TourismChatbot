@@ -1,5 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 
+# Define a reusable chat prompt template
 prompt = ChatPromptTemplate.from_messages([
     (
         "system",

@@ -1,4 +1,3 @@
-
 import os
 from typing import List, Dict
 from qdrant_client import QdrantClient
@@ -16,8 +15,6 @@ embeddings = AzureOpenAIEmbeddings(
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
     openai_api_version=os.getenv("AZURE_OPENAI_EMBEDDING_API_VERSION")
 )
-
-print(len(embeddings.embed_query("Hello from Jordan"))) ##############
 
 # 2) Connect to Qdrant
 client = QdrantClient(url=QDRANT_URL)

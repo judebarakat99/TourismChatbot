@@ -1,17 +1,22 @@
-from langchain_openai import AzureChatOpenAI
-from dotenv import load_dotenv
-from .prompts import prompt
+# backend/app/langchain/chain.py
 import os
+from dotenv import load_dotenv
+from langchain_openai import AzureChatOpenAI
+from app.langchain.prompts import prompt  # absolute import
 
+# Load .env
 load_dotenv()
 
+# Initialize Azure Chat LLM
 llm = AzureChatOpenAI(
-    azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),
+    azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),  # e.g., gpt-5-chat
     temperature=0.3,
     streaming=True,
-    openai_api_version=os.getenv("OPENAI_API_CHAT_VERSION")
+    openai_api_version=os.getenv("AZURE_OPENAI_CHAT_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT_CHAT")
 )
 
+# Create chain
 chain = prompt | llm
 
 
@@ -22,14 +27,19 @@ def stream_answer(
     current_date: str,
     language: str = "en"
 ):
-    inputs = {
-        "question": question,
-        "context": context,
-        "chat_history": chat_history,
-        "current_date": current_date,
-        "language": language
-    }
+    """
+    Render the prompt with the input variables and stream the LLM response.
+    """
+    # Format messages with keywords
+    messages = prompt.format_messages(
+        question=question,
+        context=context,
+        chat_history=chat_history,
+        current_date=current_date,
+        language=language
+    )
 
-    for chunk in chain.stream(inputs):
+    # Stream output from LLM
+    for chunk in llm.stream(messages):
         if chunk.content:
             yield chunk.content
