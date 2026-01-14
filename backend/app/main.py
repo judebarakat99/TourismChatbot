@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from datetime import date
-
 from app.langchain.rag import ask_tourism_bot
 
 app = FastAPI(title="Tourism Chatbot API")

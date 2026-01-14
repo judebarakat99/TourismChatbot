@@ -5,10 +5,10 @@ from app.qdrant.retrieval import retrieve_context
 
 def ask_tourism_bot(question: str, chat_history: str = "", language: str = "en"):
     """Retrieve context from Qdrant and stream an LLM response."""
-    # 1️⃣ Retrieve context from vector DB
+    # Retrieve context from vector DB
     context = retrieve_context(question)
 
-    # 2️⃣ Stream answer from LangChain
+    # Stream answer from LangChain
     for token in stream_answer(
         question=question,
         context=context,

@@ -2,14 +2,14 @@
 import os
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
-from app.langchain.prompts import prompt  # absolute import
+from app.langchain.prompts import prompt
 
 # Load .env
 load_dotenv()
 
 # Initialize Azure Chat LLM
 llm = AzureChatOpenAI(
-    azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),  # e.g., gpt-5-chat
+    azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),  
     temperature=0.3,
     streaming=True,
     openai_api_version=os.getenv("AZURE_OPENAI_CHAT_API_VERSION"),
