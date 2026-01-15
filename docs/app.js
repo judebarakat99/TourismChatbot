@@ -1,5 +1,5 @@
 // Change this when backend is deployed publicly
-const BACKEND_URL = "tourismaas-c0bpd5cwcrcwaxfp.spaincentral-01.azurewebsites.net";
+const BACKEND_URL = "tourismaas-c0bpd5cwcrcwaxfp.spaincentral-01.azurewebsites.net/api/chat/stream";
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
