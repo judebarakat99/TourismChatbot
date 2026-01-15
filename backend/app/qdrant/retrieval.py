@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from typing import List, Tuple
+import uuid
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
@@ -67,7 +68,7 @@ def _make_ids(chunks: List[Document]) -> List[str]:
     """
     Stable, deterministic IDs so re-ingestion upserts rather than duplicates.
     Format: "<relative_path>#<chunk_index>"
-    """
+    """    
     ids: List[str] = []
     counters: dict[str, int] = {}
     for c in chunks:
@@ -92,7 +93,8 @@ print(f"Found {len(docs)} documents in {DATA_DIR}")
 
 if docs:
     chunks = _chunks_from_docs(docs)
-    ids = _make_ids(chunks)
+
+    ids = [str(uuid.uuid4()) for _ in chunks]
     print(f"Prepared {len(chunks)} chunks. Ingesting (upsert by stable IDs)...")
 
     # Upsert chunks using deterministic IDs to avoid duplicates on repeated starts.
