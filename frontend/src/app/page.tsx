@@ -25,6 +25,12 @@ interface Conversation {
 
 export default function Home() {
   const generateSessionId = () => (crypto.getRandomValues(new Uint8Array(16)).reduce((s, b) => s + b.toString(16).padStart(2, '0'), ''));
+  const messageIdCounter = useRef(0);
+  const generateUniqueMessageId = () => {
+    const timestamp = Date.now();
+    const counter = messageIdCounter.current++;
+    return `${timestamp}-${counter}`;
+  };
 
   const [conversations, setConversations] = useState<Conversation[]>([
     {
@@ -101,13 +107,8 @@ export default function Home() {
 
     setIsLoading(true);
     const currentConv = getCurrentConversation();
-    const assistantMessage: Message = {
-      id: Date.now().toString(),
-      content: '',
-      isUser: false,
-      topic: currentConv.topic,
-      sources: [],
-    };
+    const userMessageId = generateUniqueMessageId();
+    const assistantMessageId = generateUniqueMessageId();
 
     const updatedConversations = conversations.map((conv) => {
       if (conv.id === currentConversationId) {
@@ -116,12 +117,18 @@ export default function Home() {
           messages: [
             ...conv.messages,
             {
-              id: Date.now().toString(),
+              id: userMessageId,
               content: recommendation,
               isUser: true,
               topic: conv.topic,
             },
-            assistantMessage,
+            {
+              id: assistantMessageId,
+              content: '',
+              isUser: false,
+              topic: conv.topic,
+              sources: [],
+            },
           ],
         };
       }
@@ -208,26 +215,29 @@ export default function Home() {
     setIsLoading(true);
 
     const currentConv = getCurrentConversation();
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: messageText,
-      isUser: true,
-      topic: currentConv.topic,
-    };
-
-    const assistantMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      content: '',
-      isUser: false,
-      topic: currentConv.topic,
-      sources: [],
-    };
+    const userMessageId = generateUniqueMessageId();
+    const assistantMessageId = generateUniqueMessageId();
 
     const updatedConversations = conversations.map((conv) => {
       if (conv.id === currentConversationId) {
         return {
           ...conv,
-          messages: [...conv.messages, userMessage, assistantMessage],
+          messages: [
+            ...conv.messages,
+            {
+              id: userMessageId,
+              content: messageText,
+              isUser: true,
+              topic: currentConv.topic,
+            },
+            {
+              id: assistantMessageId,
+              content: '',
+              isUser: false,
+              topic: currentConv.topic,
+              sources: [],
+            },
+          ],
         };
       }
       return conv;
