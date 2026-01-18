@@ -21,8 +21,8 @@ EXPECTED_SIZE = int(os.getenv("EMBEDDING_DIMENSION", "1536"))  # must match your
 embeddings = AzureOpenAIEmbeddings(
     model=os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT"),
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_EMBEDDING_KEY"),
-    openai_api_version=os.getenv("AZURE_OPENAI_EMBEDDING_API_VERSION"),
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
 )
 client = QdrantClient(url=QDRANT_URL)
 

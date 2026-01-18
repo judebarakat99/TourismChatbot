@@ -12,8 +12,9 @@ llm = AzureChatOpenAI(
     azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),  
     temperature=0.3,
     streaming=True,
-    openai_api_version=os.getenv("AZURE_OPENAI_CHAT_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT_CHAT")
+    openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
 )
 
 # Create chain

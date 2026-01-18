@@ -10,13 +10,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Try to import RAG, but have a fallback
-try:
-    from app.langchain.rag import ask_tourism_bot
-    rag_available = True
-except Exception as e:
-    print(f"⚠️  RAG module not available: {e}")
-    rag_available = False
+# Import RAG system
+from app.langchain.rag import ask_tourism_bot
 
 # Initialize FastAPI application with a title
 app = FastAPI(title="Tourism Chatbot API")
@@ -58,7 +53,7 @@ class ChatRequest(BaseModel):
 @app.get("/health")
 def health_check():
     """Health check endpoint for frontend to verify backend is running."""
-    return {"status": "healthy", "service": "Tourism Chatbot API"}
+    return {"status": "healthy", "service": "Tourism Chatbot API", "rag_enabled": True}
 
 
 @app.post("/chat/stream")
@@ -69,7 +64,7 @@ async def chat_stream(request: ChatRequest):
         - message: User's input text
         - session_id: Unique session identifier
         - language: Desired response language (default: 'en')
-    Streams the assistant's response using Server-Sent Events (SSE).
+    Streams the assistant's response using Server-Sent Events (SSE) with 'event: token' format.
     """
     
     session_id = request.session_id
@@ -85,28 +80,13 @@ async def chat_stream(request: ChatRequest):
     # Define a generator function to stream tokens as they are produced
     def event_stream():
         answer_tokens = []
-        sources = []
         
         try:
-            if rag_available:
-                # Call the tourism bot and stream each token
-                for token in ask_tourism_bot(question, chat_history, language):
-                    answer_tokens.append(token)
-                    # SSE format: "data: " followed by JSON and newline
-                    response_data = {
-                        "type": "content",
-                        "content": token
-                    }
-                    yield f"data: {json.dumps(response_data)}\n"
-            else:
-                # Fallback response if RAG is not available
-                fallback_response = f"I received your message: '{question}'. The AI system is currently initializing. Please ensure all dependencies are installed and Azure OpenAI credentials are configured."
-                answer_tokens.append(fallback_response)
-                response_data = {
-                    "type": "content",
-                    "content": fallback_response
-                }
-                yield f"data: {json.dumps(response_data)}\n"
+            # Call the tourism bot RAG system and stream each token
+            for token in ask_tourism_bot(question, chat_history, language):
+                answer_tokens.append(token)
+                # SSE format: "event: token\ndata: {token}\n\n"
+                yield f"event: token\ndata: {token}\n\n"
 
             # Combine all tokens into the full answer
             full_answer = "".join(answer_tokens)
@@ -116,24 +96,17 @@ async def chat_stream(request: ChatRequest):
             history.append({"role": "assistant", "content": full_answer})
             sessions[session_id] = history
             
-            # Infer topic from the response (simplified)
-            topic = "Italy Tourism"  # Default topic
-            
             # Send completion event with metadata
             completion_data = {
-                "type": "complete",
-                "topic": topic,
-                "sources": sources
+                "topic": "Italy Tourism",
+                "message": "Response completed using trained RAG system"
             }
-            yield f"data: {json.dumps(completion_data)}\n"
+            yield f"event: meta\ndata: {json.dumps(completion_data)}\n\n"
             
         except Exception as e:
             # Send error response
-            error_data = {
-                "type": "error",
-                "content": f"Error: {str(e)}"
-            }
-            yield f"data: {json.dumps(error_data)}\n"
+            error_message = f"Error processing request: {str(e)}"
+            yield f"event: error\ndata: {error_message}\n\n"
 
     # Return a streaming response so the client receives tokens progressively
     return StreamingResponse(event_stream(), media_type="text/event-stream")
