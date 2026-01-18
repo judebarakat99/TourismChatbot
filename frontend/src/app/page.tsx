@@ -148,38 +148,53 @@ export default function Home() {
       const decoder = new TextDecoder();
       let content = '';
       let sources: Array<{ title: string; source: string }> = [];
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        const lines = text.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        
+        // Keep the last incomplete event in the buffer
+        buffer = events.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('event: meta')) {
-            const nextLine = lines[lines.indexOf(line) + 1];
-            if (nextLine?.startsWith('data:')) {
-              const data = JSON.parse(nextLine.slice(5)) as { sources?: Array<{ title: string; source: string }> };
+        for (const event of events) {
+          const lines = event.trim().split('\n');
+          
+          if (lines[0] === 'event: meta' && lines[1]?.startsWith('data:')) {
+            try {
+              const data = JSON.parse(lines[1].slice(5)) as { sources?: Array<{ title: string; source: string }> };
               sources = data.sources || [];
+            } catch (e) {
+              // Ignore JSON parse errors
             }
-          } else if (line.startsWith('event: token')) {
-            const nextLine = lines[lines.indexOf(line) + 1];
-            if (nextLine?.startsWith('data:')) {
-              content += nextLine.slice(5);
-              setConversations((prevConvs) =>
-                prevConvs.map((conv) => {
-                  if (conv.id === currentConversationId) {
-                    const lastMsg = conv.messages[conv.messages.length - 1];
-                    if (!lastMsg.isUser) {
-                      lastMsg.content = content;
-                      lastMsg.sources = sources;
-                    }
+          } else if (lines[0] === 'event: token' && lines[1]?.startsWith('data:')) {
+            try {
+              // Parse the JSON-encoded token (should be a string)
+              const tokenData = JSON.parse(lines[1].slice(5));
+              if (typeof tokenData === 'string') {
+                content += tokenData;
+              } else {
+                console.warn('Token is not a string:', tokenData);
+              }
+            } catch (e) {
+              console.warn('Failed to parse token:', lines[1].slice(5), 'Error:', e);
+              // Fallback: don't add anything if we can't parse
+            }
+            setConversations((prevConvs) =>
+              prevConvs.map((conv) => {
+                if (conv.id === currentConversationId) {
+                  const lastMsg = conv.messages[conv.messages.length - 1];
+                  if (!lastMsg.isUser) {
+                    lastMsg.content = content;
+                    lastMsg.sources = sources;
                   }
-                  return conv;
-                })
-              );
-            }
+                }
+                return conv;
+              })
+            );
           }
         }
       }
@@ -256,38 +271,53 @@ export default function Home() {
       const decoder = new TextDecoder();
       let content = '';
       let sources: Array<{ title: string; source: string }> = [];
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        const lines = text.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        
+        // Keep the last incomplete event in the buffer
+        buffer = events.pop() || '';
 
-        for (const line of lines) {
-          if (line.startsWith('event: meta')) {
-            const nextLine = lines[lines.indexOf(line) + 1];
-            if (nextLine?.startsWith('data:')) {
-              const data = JSON.parse(nextLine.slice(5)) as { sources?: Array<{ title: string; source: string }> };
+        for (const event of events) {
+          const lines = event.trim().split('\n');
+          
+          if (lines[0] === 'event: meta' && lines[1]?.startsWith('data:')) {
+            try {
+              const data = JSON.parse(lines[1].slice(5)) as { sources?: Array<{ title: string; source: string }> };
               sources = data.sources || [];
+            } catch (e) {
+              // Ignore JSON parse errors
             }
-          } else if (line.startsWith('event: token')) {
-            const nextLine = lines[lines.indexOf(line) + 1];
-            if (nextLine?.startsWith('data:')) {
-              content += nextLine.slice(5);
-              setConversations((prevConvs) =>
-                prevConvs.map((conv) => {
-                  if (conv.id === currentConversationId) {
-                    const lastMsg = conv.messages[conv.messages.length - 1];
-                    if (!lastMsg.isUser) {
-                      lastMsg.content = content;
-                      lastMsg.sources = sources;
-                    }
+          } else if (lines[0] === 'event: token' && lines[1]?.startsWith('data:')) {
+            try {
+              // Parse the JSON-encoded token (should be a string)
+              const tokenData = JSON.parse(lines[1].slice(5));
+              if (typeof tokenData === 'string') {
+                content += tokenData;
+              } else {
+                console.warn('Token is not a string:', tokenData);
+              }
+            } catch (e) {
+              console.warn('Failed to parse token:', lines[1].slice(5), 'Error:', e);
+              // Fallback: don't add anything if we can't parse
+            }
+            setConversations((prevConvs) =>
+              prevConvs.map((conv) => {
+                if (conv.id === currentConversationId) {
+                  const lastMsg = conv.messages[conv.messages.length - 1];
+                  if (!lastMsg.isUser) {
+                    lastMsg.content = content;
+                    lastMsg.sources = sources;
                   }
-                  return conv;
-                })
-              );
-            }
+                }
+                return conv;
+              })
+            );
           }
         }
       }

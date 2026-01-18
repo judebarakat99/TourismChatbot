@@ -82,11 +82,20 @@ async def chat_stream(request: ChatRequest):
         answer_tokens = []
         
         try:
+            print(f"🔍 Processing question: {question}")
             # Call the tourism bot RAG system and stream each token
+            token_count = 0
             for token in ask_tourism_bot(question, chat_history, language):
-                answer_tokens.append(token)
-                # SSE format: "event: token\ndata: {token}\n\n"
-                yield f"event: token\ndata: {token}\n\n"
+                token_count += 1
+                if token:  # Only process non-empty tokens
+                    answer_tokens.append(token)
+                    # SSE format with JSON-encoded token to handle newlines safely
+                    # Debug: show what we're sending
+                    if token_count <= 3 or token_count % 50 == 0:
+                        print(f"Token {token_count}: {repr(token)}")
+                    yield f"event: token\ndata: {json.dumps(token)}\n\n"
+            
+            print(f"✅ Streamed {token_count} tokens for question: {question}")
 
             # Combine all tokens into the full answer
             full_answer = "".join(answer_tokens)
