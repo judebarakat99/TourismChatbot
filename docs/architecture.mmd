@@ -1,0 +1,35 @@
+flowchart LR
+    subgraph Client
+        U[User Browser]
+    end
+
+    subgraph Frontend
+        F["Next.js App<br/>Routey UI"]
+    end
+
+    subgraph Backend
+        B["FastAPI Server<br/>app/main.py"]
+        LC["LangChain RAG<br/>(app/langchain)"]
+        QRET["Qdrant Retrieval<br/>(app/qdrant/retrieval.py)"]
+    end
+
+    subgraph DataLayer
+        QDB["Qdrant Vector DB"]
+        DATA["Tourism Docs<br/>data/*.txt"]
+    end
+
+    subgraph Azure
+        AOAI["Azure OpenAI<br/>Chat + Embeddings"]
+    end
+
+    U -->|HTTPS + SSE| F
+    F -->|/chat/stream| B
+    B --> LC
+    LC -->|context request| QRET
+    QRET -->|similarity search| QDB
+    QDB -->|top-k chunks| QRET
+    LC -->|prompt with context| AOAI
+    AOAI -->|streamed tokens| LC
+    LC --> B -->|event:token/meta| F --> U
+
+    DATA -->|ingest scripts| QDB
