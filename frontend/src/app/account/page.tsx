@@ -6,12 +6,44 @@ import { updateUserProfile, deleteUserAccount, getUserProfile, healthCheck } fro
 import { t, Language } from "@/lib/translations";
 import { useLanguage } from "@/hooks/useLanguage";
 
+/**
+ * Account Page Component
+ * 
+ * REFACTORING NOTES (Code Cleanup):
+ * - Replaced manual language state management with useLanguage() hook
+ *   OLD: Initialize state + load from localStorage + event listeners (60+ lines)
+ *   NEW: Single useLanguage() call
+ * 
+ * - Removed:
+ *   1) useState for language
+ *   2) useEffect for language initialization
+ *   3) Manual RTL direction updates
+ *   4) Storage event listeners
+ *   5) Custom event listeners
+ * 
+ * - All language handling now automatic via custom hook
+ * - Component focuses on user profile management logic
+ * 
+ * BEHAVIOR: Language switching works exactly as before
+ * - Page text updates when language changes
+ * - RTL direction applied automatically
+ * - No changes to profile management functionality
+ */
 export default function AccountPage() {
+  /**
+   * Current language from custom hook
+   * Automatically updates when language changes anywhere in app
+   * Used for translating all UI text on this page
+   */
   const language = useLanguage();
+  
+  // Profile information state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // UI state
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -20,6 +52,10 @@ export default function AccountPage() {
 
   const isRTL = language === "ar";
 
+  /**
+   * Load user profile and check backend health on mount
+   * Fetches existing name and email from server if available
+   */
   useEffect(() => {
     const checkBackend = async () => {
       const status = await healthCheck();

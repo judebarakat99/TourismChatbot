@@ -6,6 +6,11 @@ import { chatWithStream, healthCheck } from '@/lib/api';
 import { t, Language } from '@/lib/translations';
 import { useLanguage } from '@/hooks/useLanguage';
 
+/**
+ * Message interface represents a single message in the conversation
+ * Each message tracks its unique ID, content, sender (user/assistant),
+ * topic, and sources for RAG (Retrieval Augmented Generation) responses
+ */
 interface Message {
   id: string;
   content: string;
@@ -14,6 +19,11 @@ interface Message {
   sources?: Array<{ title: string; source: string }>;
 }
 
+/**
+ * Conversation interface represents a chat session
+ * Users can maintain multiple conversations, each with its own message history,
+ * topic category, and metadata like favorites and session IDs
+ */
 interface Conversation {
   id: string;
   title: string;
@@ -24,15 +34,58 @@ interface Conversation {
   isFavorite: boolean;
 }
 
+/**
+ * Home page component - Main chatbot interface
+ * 
+ * REFACTORING NOTES (Code Cleanup):
+ * - Replaced duplicated language state management with useLanguage() hook
+ *   OLD: useState + useEffect for language initialization + event listeners (50+ lines)
+ *   NEW: Single useLanguage() call (1 line)
+ * 
+ * - Removed 2 useEffect hooks that handled:
+ *   1) Language loading from localStorage
+ *   2) Storage event listeners for multi-tab sync
+ *   3) RTL/LTR direction updates
+ *   All now handled automatically by useLanguage hook
+ * 
+ * - Kept essential useEffect hooks for:
+ *   1) Auto-scroll to bottom when messages update
+ *   2) Backend health check on component mount
+ * 
+ * BEHAVIOR: No changes to functionality - all language switching,
+ * RTL support, and messaging works exactly as before
+ */
 export default function Home() {
-  const generateSessionId = () => (crypto.getRandomValues(new Uint8Array(16)).reduce((s, b) => s + b.toString(16).padStart(2, '0'), ''));
+  // ==================== Utility Functions ====================
+  
+  /**
+   * Generate a unique session ID for tracking conversation context
+   * Uses cryptographic random bytes encoded as hexadecimal
+   */
+  const generateSessionId = () => 
+    (crypto.getRandomValues(new Uint8Array(16)).reduce(
+      (s, b) => s + b.toString(16).padStart(2, '0'), ''
+    ));
+
+  // Track message IDs to ensure each message in a session is unique
   const messageIdCounter = useRef(0);
+  
+  /**
+   * Generate unique message ID combining timestamp and counter
+   * This ensures uniqueness even if messages are created at same millisecond
+   */
   const generateUniqueMessageId = () => {
     const timestamp = Date.now();
     const counter = messageIdCounter.current++;
     return `${timestamp}-${counter}`;
   };
 
+  // ==================== State Management ====================
+
+  /**
+   * Conversations state: stores all chat sessions
+   * Initialized with one default conversation for user to start typing
+   */
   const [conversations, setConversations] = useState<Conversation[]>([
     {
       id: '1',
@@ -50,11 +103,25 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
+  
+  /**
+   * REFACTORED: Language now managed by custom hook
+   * - Replaces: useState('en') + useEffect setup (60+ lines of code)
+   * - Single call handles loading, syncing, and RTL updates
+   * - Language changes automatically trigger re-render
+   */
   const language = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Determine if RTL layout needed (for Arabic language)
   const isRTL = language === 'ar';
 
+  // ==================== Effects ====================
+
+  /**
+   * Auto-scroll effect: Keep view at bottom of messages
+   * Provides better UX when messages overflow viewport
+   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -63,6 +130,10 @@ export default function Home() {
     scrollToBottom();
   }, [conversations, currentConversationId]);
 
+  /**
+   * Health check effect: Verify backend is available
+   * Runs once on component mount
+   */
   useEffect(() => {
     const checkBackend = async () => {
       const status = await healthCheck();
