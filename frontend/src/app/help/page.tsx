@@ -3,44 +3,11 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { t, Language } from "@/lib/translations";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function HelpPage() {
-  // Initialize language from localStorage
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem("language") as Language) || "en";
-    }
-    return "en";
-  });
+  const language = useLanguage();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    // Apply RTL direction based on language
-    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-
-    // Listen for storage changes (when language changes on settings page)
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || "en";
-      setLanguage(newLanguage);
-      document.documentElement.dir = newLanguage === "ar" ? "rtl" : "ltr";
-    };
-
-    // Listen for custom language change event (same tab)
-    const handleLanguageChanged = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const newLanguage = customEvent.detail.language as Language;
-      setLanguage(newLanguage);
-      document.documentElement.dir = newLanguage === "ar" ? "rtl" : "ltr";
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('languageChanged', handleLanguageChanged);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('languageChanged', handleLanguageChanged);
-    };
-  }, []);
 
   const faqs = [
     {

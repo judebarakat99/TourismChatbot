@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { updateUserSettings, healthCheck } from "@/lib/api";
 import { t, Language } from "@/lib/translations";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const languageOptions = [
   { code: "en", name: "English", nativeName: "English" },
@@ -11,7 +12,7 @@ const languageOptions = [
 ];
 
 export default function SettingsPage() {
-  const [language, setLanguage] = useState<Language>("en");
+  const language = useLanguage();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [privateProfile, setPrivateProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -21,36 +22,11 @@ export default function SettingsPage() {
   const isRTL = language === "ar";
 
   useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem("language") as Language || "en";
-    setLanguage(savedLanguage);
-
     const checkBackend = async () => {
       const status = await healthCheck();
       setBackendStatus(status.status);
     };
     checkBackend();
-    
-    // Apply RTL/LTR direction
-    if (savedLanguage === "ar") {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-
-    // Listen for language changes from other tabs
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || "en";
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleSaveSettings = async () => {

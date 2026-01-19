@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { chatWithStream, healthCheck } from '@/lib/api';
 import { t, Language } from '@/lib/translations';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface Message {
   id: string;
@@ -49,7 +50,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
-  const [language, setLanguage] = useState<Language>('en');
+  const language = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isRTL = language === 'ar';
@@ -63,53 +64,11 @@ export default function Home() {
   }, [conversations, currentConversationId]);
 
   useEffect(() => {
-    // Load language from localStorage on component mount
-    const savedLanguage = localStorage.getItem("language") as Language || 'en';
-    setLanguage(savedLanguage);
-
     const checkBackend = async () => {
       const status = await healthCheck();
       setBackendStatus(status.status);
     };
     checkBackend();
-    
-    // Apply RTL/LTR direction based on language
-    if (savedLanguage === 'ar') {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-
-    // Listen for storage changes (when language changes on settings page)
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || 'en';
-      setLanguage(newLanguage);
-      if (newLanguage === 'ar') {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    // Listen for custom language change event (same tab)
-    const handleLanguageChanged = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const newLanguage = customEvent.detail.language as Language;
-      setLanguage(newLanguage);
-      if (newLanguage === 'ar') {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('languageChanged', handleLanguageChanged);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('languageChanged', handleLanguageChanged);
-    };
   }, []);
 
   const getCurrentConversation = () => {

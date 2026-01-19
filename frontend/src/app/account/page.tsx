@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { updateUserProfile, deleteUserAccount, getUserProfile, healthCheck } from "@/lib/api";
 import { t, Language } from "@/lib/translations";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function AccountPage() {
-  const [language, setLanguage] = useState<Language>("en");
+  const language = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,17 +21,6 @@ export default function AccountPage() {
   const isRTL = language === "ar";
 
   useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem("language") as Language || "en";
-    setLanguage(savedLanguage);
-
-    // Apply RTL direction
-    if (savedLanguage === "ar") {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-
     const checkBackend = async () => {
       const status = await healthCheck();
       setBackendStatus(status.status);
@@ -45,37 +35,6 @@ export default function AccountPage() {
       }
     };
     checkBackend();
-
-    // Listen for storage changes (when language changes on settings page)
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || "en";
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    // Listen for custom language change event (same tab)
-    const handleLanguageChanged = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const newLanguage = customEvent.detail.language as Language;
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('languageChanged', handleLanguageChanged);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('languageChanged', handleLanguageChanged);
-    };
   }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
