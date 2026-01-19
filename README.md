@@ -142,6 +142,26 @@ Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "cd frontend; np
 
 ---
 
+## Docker Compose (deploy)
+
+The [deploy](deploy) folder now holds dedicated Compose files so you can start just the pieces you need or the full stack with explicit ordering.
+
+### Single-service workflows
+
+- [deploy/qdrant.compose](deploy/qdrant.compose): `docker compose -f deploy/qdrant.compose up -d` — launches Qdrant with persisted storage and a readiness probe.
+- [deploy/backend.compose](deploy/backend.compose): `docker compose -f deploy/backend.compose up --build` — runs the FastAPI backend using your [backend/.env](backend/.env) file. By default it points `QDRANT_URL` at `http://host.docker.internal:6333`; override via `QDRANT_URL=...` if Qdrant lives elsewhere.
+- [deploy/frontend.compose](deploy/frontend.compose): `docker compose -f deploy/frontend.compose up --build` — starts the Next.js dev server with hot reload. It targets `http://host.docker.internal:8000` unless you override `NEXT_PUBLIC_API_URL` when invoking Docker.
+
+> Tip: launching Qdrant and backend via their dedicated Compose files keeps the containers isolated yet reachable through the published ports. When you need cross-container networking without host bridges, use the stack file below.
+
+### Full stack with ordered boot
+
+- [deploy/stack.compose](deploy/stack.compose): `docker compose -f deploy/stack.compose up --build` — spins up Qdrant → backend (after Qdrant healthcheck passes) → waits 30 seconds before starting the frontend so the API cache warms up. `depends_on` plus health checks guarantee Qdrant is online before the backend, and the frontend command adds the required 30-second pause after the backend becomes healthy.
+
+All Compose files mount the local source directories, so code edits on the host reflect instantly inside the containers. Stop everything with `docker compose -f deploy/<file>.compose down` (add `-v` if you want to remove the named volumes like `qdrant_storage`).
+
+---
+
 ## Project Structure 🏗️
 
 ```
