@@ -6,7 +6,7 @@ import { t, Language } from "@/lib/translations";
 
 export default function HelpPage() {
   // Initialize language from localStorage
-  const [language] = useState<Language>(() => {
+  const [language, setLanguage] = useState<Language>(() => {
     if (typeof window !== 'undefined') {
       return (localStorage.getItem("language") as Language) || "en";
     }
@@ -17,8 +17,30 @@ export default function HelpPage() {
   useEffect(() => {
     // Apply RTL direction based on language
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    localStorage.setItem("language", language);
-  }, [language]);
+
+    // Listen for storage changes (when language changes on settings page)
+    const handleStorageChange = () => {
+      const newLanguage = localStorage.getItem("language") as Language || "en";
+      setLanguage(newLanguage);
+      document.documentElement.dir = newLanguage === "ar" ? "rtl" : "ltr";
+    };
+
+    // Listen for custom language change event (same tab)
+    const handleLanguageChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const newLanguage = customEvent.detail.language as Language;
+      setLanguage(newLanguage);
+      document.documentElement.dir = newLanguage === "ar" ? "rtl" : "ltr";
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('languageChanged', handleLanguageChanged);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('languageChanged', handleLanguageChanged);
+    };
+  }, []);
 
   const faqs = [
     {
@@ -54,7 +76,7 @@ export default function HelpPage() {
         {/* Top Section */}
         <div className="p-4 border-b border-[#1A1D25]">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">✨</span>
+            <span className="text-lg">•</span>
             <Link href="/" className="text-lg font-bold text-[#E8A300] hover:opacity-80 transition">
               {t('routey', language)}
             </Link>

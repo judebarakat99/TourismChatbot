@@ -79,17 +79,38 @@ export default function Home() {
     } else {
       document.documentElement.dir = "ltr";
     }
-  }, []);
 
-  // Update RTL direction when language changes
-  useEffect(() => {
-    localStorage.setItem("language", language);
-    if (isRTL) {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-  }, [language, isRTL]);
+    // Listen for storage changes (when language changes on settings page)
+    const handleStorageChange = () => {
+      const newLanguage = localStorage.getItem("language") as Language || 'en';
+      setLanguage(newLanguage);
+      if (newLanguage === 'ar') {
+        document.documentElement.dir = "rtl";
+      } else {
+        document.documentElement.dir = "ltr";
+      }
+    };
+
+    // Listen for custom language change event (same tab)
+    const handleLanguageChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const newLanguage = customEvent.detail.language as Language;
+      setLanguage(newLanguage);
+      if (newLanguage === 'ar') {
+        document.documentElement.dir = "rtl";
+      } else {
+        document.documentElement.dir = "ltr";
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('languageChanged', handleLanguageChanged);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('languageChanged', handleLanguageChanged);
+    };
+  }, []);
 
   const getCurrentConversation = () => {
     return conversations.find((c) => c.id === currentConversationId) || conversations[0];

@@ -32,16 +32,30 @@ export default function SettingsPage() {
     checkBackend();
     
     // Apply RTL/LTR direction
-    if (isRTL) {
+    if (savedLanguage === "ar") {
       document.documentElement.dir = "rtl";
     } else {
       document.documentElement.dir = "ltr";
     }
-  }, [language, isRTL]);
+
+    // Listen for language changes from other tabs
+    const handleStorageChange = () => {
+      const newLanguage = localStorage.getItem("language") as Language || "en";
+      setLanguage(newLanguage);
+      if (newLanguage === "ar") {
+        document.documentElement.dir = "rtl";
+      } else {
+        document.documentElement.dir = "ltr";
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const handleSaveSettings = async () => {
     if (backendStatus !== "healthy") {
-      setSaveMessage("❌ " + t('backend_unavailable', language));
+      setSaveMessage("Backend unavailable");
       return;
     }
 
@@ -50,6 +64,9 @@ export default function SettingsPage() {
     
     // Save language to localStorage
     localStorage.setItem("language", language);
+    
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new CustomEvent("languageChanged", { detail: { language } }));
 
     try {
       await updateUserSettings({
@@ -57,10 +74,10 @@ export default function SettingsPage() {
         privacy_mode: privateProfile,
         language,
       });
-      setSaveMessage("✅ " + t('settings_saved', language));
+      setSaveMessage("Settings saved successfully");
       setTimeout(() => setSaveMessage(""), 3000);
     } catch {
-      setSaveMessage("❌ " + t('failed_update', language));
+      setSaveMessage("Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -73,7 +90,7 @@ export default function SettingsPage() {
         {/* Top Section */}
         <div className="p-4 border-b border-[#1A1D25]">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">✨</span>
+            <span className="text-lg">•</span>
             <Link href="/" className="text-lg font-bold text-[#E8A300] hover:opacity-80 transition">
               {t('routey', language)}
             </Link>
@@ -89,7 +106,7 @@ export default function SettingsPage() {
               placeholder="Contents..."
               className="w-full bg-[#1A1D25] text-[#E8E8E8] placeholder-[#666] text-sm rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#E8A300] transition"
             />
-            <span className="absolute right-3 top-2.5 text-[#666]">🔍</span>
+            <span className="absolute right-3 top-2.5 text-[#666]">◉</span>
           </div>
         </div>
 
