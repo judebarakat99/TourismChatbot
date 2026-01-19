@@ -4,14 +4,54 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { updateUserSettings, healthCheck } from "@/lib/api";
 import { t, Language } from "@/lib/translations";
+import { useLanguage } from "@/hooks/useLanguage";
 
+/**
+ * Available language options for the application
+ * Provides both English name and native language name for better UX
+ */
 const languageOptions = [
   { code: "en", name: "English", nativeName: "English" },
   { code: "ar", name: "العربية", nativeName: "Arabic" },
 ];
 
+/**
+ * Settings Page Component
+ * 
+ * REFACTORING NOTES (Code Cleanup):
+ * - Replaced manual language state management with useLanguage() hook
+ *   OLD: Load from localStorage + event listeners (40+ lines)
+ *   NEW: Single useLanguage() call
+ * 
+ * - Added separate 'selectedLanguage' state for UI form
+ *   This allows user to change selection before saving
+ *   Syncs with actual language via useEffect when useLanguage changes
+ * 
+ * - Removed all event listener setup code (now in custom hook)
+ * - Removed RTL direction updates (now automatic via hook)
+ * 
+ * BEHAVIOR: Language switching works exactly as before
+ * - User selects language in dropdown
+ * - Clicks "Save Changes"
+ * - Language updates across all pages including other tabs
+ * - RTL direction applied automatically for Arabic
+ */
 export default function SettingsPage() {
-  const [language, setLanguage] = useState<Language>("en");
+  /**
+   * Current language from custom hook
+   * Used for translating UI text on this page
+   * Automatically updates when language changes anywhere in app
+   */
+  const language = useLanguage();
+  
+  /**
+   * Selected language state for the form
+   * Allows user to pick language before saving
+   * Stays in sync with actual language via useEffect
+   */
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
+  
+  // Other settings state
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [privateProfile, setPrivateProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -20,37 +60,24 @@ export default function SettingsPage() {
 
   const isRTL = language === "ar";
 
+  /**
+   * Sync selectedLanguage with actual language
+   * When language changes (from other tabs or programmatically),
+   * update the form to reflect the current selection
+   */
   useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem("language") as Language || "en";
-    setLanguage(savedLanguage);
+    setSelectedLanguage(language);
+  }, [language]);
 
+  /**
+   * Health check: Verify backend is available on page load
+   */
+  useEffect(() => {
     const checkBackend = async () => {
       const status = await healthCheck();
       setBackendStatus(status.status);
     };
     checkBackend();
-    
-    // Apply RTL/LTR direction
-    if (savedLanguage === "ar") {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-
-    // Listen for language changes from other tabs
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || "en";
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const handleSaveSettings = async () => {
@@ -63,16 +90,16 @@ export default function SettingsPage() {
     setSaveMessage("");
     
     // Save language to localStorage
-    localStorage.setItem("language", language);
+    localStorage.setItem("language", selectedLanguage);
     
     // Dispatch custom event for same-tab updates
-    window.dispatchEvent(new CustomEvent("languageChanged", { detail: { language } }));
+    window.dispatchEvent(new CustomEvent("languageChanged", { detail: { language: selectedLanguage } }));
 
     try {
       await updateUserSettings({
         notifications_enabled: notificationsEnabled,
         privacy_mode: privateProfile,
-        language,
+        language: selectedLanguage,
       });
       setSaveMessage("Settings saved successfully");
       setTimeout(() => setSaveMessage(""), 3000);
@@ -232,9 +259,9 @@ export default function SettingsPage() {
                   {languageOptions.map((lang) => (
                     <button
                       key={lang.code}
-                      onClick={() => setLanguage(lang.code as Language)}
+                      onClick={() => setSelectedLanguage(lang.code as Language)}
                       className={`px-4 py-3 rounded-lg border transition ${
-                        language === lang.code
+                        selectedLanguage === lang.code
                           ? "bg-[#E8A300] text-black border-[#E8A300]"
                           : "bg-[#0F1419] text-[#E8E8E8] border-[#2A2D35] hover:border-[#E8A300]"
                       }`}

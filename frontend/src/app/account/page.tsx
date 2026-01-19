@@ -4,13 +4,46 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { updateUserProfile, deleteUserAccount, getUserProfile, healthCheck } from "@/lib/api";
 import { t, Language } from "@/lib/translations";
+import { useLanguage } from "@/hooks/useLanguage";
 
+/**
+ * Account Page Component
+ * 
+ * REFACTORING NOTES (Code Cleanup):
+ * - Replaced manual language state management with useLanguage() hook
+ *   OLD: Initialize state + load from localStorage + event listeners (60+ lines)
+ *   NEW: Single useLanguage() call
+ * 
+ * - Removed:
+ *   1) useState for language
+ *   2) useEffect for language initialization
+ *   3) Manual RTL direction updates
+ *   4) Storage event listeners
+ *   5) Custom event listeners
+ * 
+ * - All language handling now automatic via custom hook
+ * - Component focuses on user profile management logic
+ * 
+ * BEHAVIOR: Language switching works exactly as before
+ * - Page text updates when language changes
+ * - RTL direction applied automatically
+ * - No changes to profile management functionality
+ */
 export default function AccountPage() {
-  const [language, setLanguage] = useState<Language>("en");
+  /**
+   * Current language from custom hook
+   * Automatically updates when language changes anywhere in app
+   * Used for translating all UI text on this page
+   */
+  const language = useLanguage();
+  
+  // Profile information state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  // UI state
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -19,18 +52,11 @@ export default function AccountPage() {
 
   const isRTL = language === "ar";
 
+  /**
+   * Load user profile and check backend health on mount
+   * Fetches existing name and email from server if available
+   */
   useEffect(() => {
-    // Load language from localStorage
-    const savedLanguage = localStorage.getItem("language") as Language || "en";
-    setLanguage(savedLanguage);
-
-    // Apply RTL direction
-    if (savedLanguage === "ar") {
-      document.documentElement.dir = "rtl";
-    } else {
-      document.documentElement.dir = "ltr";
-    }
-
     const checkBackend = async () => {
       const status = await healthCheck();
       setBackendStatus(status.status);
@@ -45,37 +71,6 @@ export default function AccountPage() {
       }
     };
     checkBackend();
-
-    // Listen for storage changes (when language changes on settings page)
-    const handleStorageChange = () => {
-      const newLanguage = localStorage.getItem("language") as Language || "en";
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    // Listen for custom language change event (same tab)
-    const handleLanguageChanged = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const newLanguage = customEvent.detail.language as Language;
-      setLanguage(newLanguage);
-      if (newLanguage === "ar") {
-        document.documentElement.dir = "rtl";
-      } else {
-        document.documentElement.dir = "ltr";
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('languageChanged', handleLanguageChanged);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('languageChanged', handleLanguageChanged);
-    };
   }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
